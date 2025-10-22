@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 df = pd.read_csv('earthquakes.csv', sep=',', encoding='utf-8')
 
@@ -99,59 +100,56 @@ def ask2(df):
 
 # Pergunta 3: Como os níveis de alerta (alert - 'green', 'yellow', 'red') se distribuem geograficamente? Onde se concentram os alertas de maior impacto (vermelho), indicando áreas prioritárias para infraestrutura de resposta rápida?
 def ask3(df):
-    # --- Parte A: "Mapa" - Distribuição Geográfica dos Alertas ---
-
+    # --- Parte A: Mapa com distribuição geográfica dos alertas ---
     alert_levels = ['green', 'yellow', 'red']
     df_alerts = df[df['alert'].isin(alert_levels)].copy()
 
-    # 1. Mapear cores
+    # 1. Mapeamento de cores
     color_map = {'green': '#2ca02c', 'yellow': '#ffdd00', 'red': '#d62728'}
 
-    # 2. Criar o gráfico de dispersão (Longitude vs Latitude)
+    # 2. Criar figura com projeção geográfica
     plt.figure(figsize=(15, 8))
 
-    # Plotar cada grupo para criar a legenda
+    # Adicionar mapa base
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.stock_img()
+    ax.coastlines()
+
+    # 3. Plotar pontos por nível de alerta
     for alert_level in alert_levels:
         df_subset = df_alerts[df_alerts['alert'] == alert_level]
-        plt.scatter(
+        ax.scatter(
             df_subset['longitude'],
             df_subset['latitude'],
             color=color_map[alert_level],
             label=f'Alerta {alert_level.capitalize()}',
             alpha=0.7,
-            s=df_subset['magnitude'] * 10  # Tamanho do ponto pela magnitude
+            s=df_subset['magnitude'] * 12,  # tamanho proporcional à magnitude
+            transform=ccrs.PlateCarree()
         )
 
-    plt.title('Distribuição Geográfica dos Níveis de Alerta')
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-
-    lgnd = plt.legend(title='Nível de Alerta')
-
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.axhline(0, color='black', linewidth=0.5)  # Linha do Equador
-    plt.axvline(0, color='black', linewidth=0.5)  # Meridiano de Greenwich
-    plt.tight_layout()
+    # 4. Títulos e legenda
+    plt.title('Distribuição Geográfica dos Níveis de Alerta de Terremotos', fontsize=14)
+    ax.legend(title='Nível de Alerta', loc='lower left')
 
     plt.show()
 
-    # --- Parte B: Gráfico - Concentração de Alertas Vermelhos ---
-
-    # 1. Contar alertas vermelhos por país
+    # --- Parte B: Gráfico de barras dos alertas vermelhos ---
     df_red_counts = df[df['alert'] == 'red']['country'].value_counts()
 
-    # 2. Criar o gráfico de barras
-    plt.figure(figsize=(12, 7))
-    df_red_counts.plot(kind='bar', color='crimson')
+    if not df_red_counts.empty:
+        plt.figure(figsize=(12, 7))
+        df_red_counts.plot(kind='bar', color='crimson')
 
-    plt.title('Concentração de Alertas de Maior Impacto (Vermelho) por País')
-    plt.xlabel('País')
-    plt.ylabel('Contagem de Alertas Vermelhos')
-    plt.xticks(rotation=45, ha='right')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-
-    plt.show()
+        plt.title('Concentração de Alertas Vermelhos por País')
+        plt.xlabel('País')
+        plt.ylabel('Contagem de Alertas Vermelhos')
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.show()
+    else:
+        print("Nenhum alerta vermelho encontrado nos dados.")
 
 # Pergunta 4: Qual é a correlação estatística entre a magnitude, a profundidade e a intensidade de dano reportada? Terremotos mais rasos tendem a gerar MMI mais alto para a mesma magnitude?
 def ask4(df):
