@@ -10,30 +10,29 @@ df = pd.read_csv('earthquakes.csv', sep=',', encoding='utf-8')
 
 # Pergunta 1: Qual é a porcentagem de terremotos ocorridos em zonas costeiras que efetivamente geraram um alerta de tsunami?
 def ask1(df):
-    # Definir palavras-chave costeiras
+    #Definir palavras-chave costeiras
     coastal_keywords = ['coast', 'off ', 'sea', 'ocean', 'costa', 'mar', 'ridge']
 
-    # Filtrar eventos costeiros
-    df['is_coastal'] = df['place'].astype(str).str.contains('|'.join(coastal_keywords), case=False, na=False)
-    df_coastal = df[df['is_coastal'] == True].copy()
+    #Filtrar eventos costeiros/oceânicos
+    df_coastal = df[df['subnational'].isnull()].copy()
 
-    # Contar eventos com e sem tsunami
+    #Contar eventos com e sem tsunami
     count_tsunami = df_coastal[df_coastal['tsunami'] == 1].shape[0]
     count_no_tsunami = df_coastal[df_coastal['tsunami'] == 0].shape[0]
 
-    # Preparar dados para o gráfico
+    #Preparar dados para o gráfico
     sizes = [count_tsunami, count_no_tsunami]
     labels = ['Gerou Alerta', 'Não Gerou Alerta']
-    colors = ['#d62728', '#1f77b4']  # Vermelho e Azul
+    colors = ['#d62728', '#1f77b4'] # Vermelho e Azul
 
-    # Criar o gráfico de pizza
+    #Criar o gráfico de pizza
     plt.figure(figsize=(8, 8))
     plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140, wedgeprops={'edgecolor': 'white'}
-            )
+    )
 
     plt.title('Proporção de Alertas de Tsunami em Eventos Costeiros')
 
-    # Mostrar o gráfico
+    #Mostrar o gráfico
     plt.show()
 
 # Pergunta 2: Quais são os eventos com o maior número de relatos de percepção humana? Esses eventos correlacionam-se mais com a magnitude ou com a proximidade a áreas densamente povoadas?
