@@ -37,35 +37,44 @@ def ask1(df):
 
 # Pergunta 2: Quais são os eventos com o maior número de relatos de percepção humana? Esses eventos correlacionam-se mais com a magnitude ou com a proximidade a áreas densamente povoadas?
 def ask2(df):
-    # Parte A: Top 10 Eventos por 'felt'
+    #Parte A: Top 10 Eventos por 'felt'
 
-    # 1. Obter Top 10
-    df_top_felt = df.dropna(subset=['felt']).nlargest(10, 'felt')
+    #Obter Top 10
+    df_top_felt = df.nlargest(10, 'felt')
 
-    # 2. Plotar Gráfico de Barras
+    #Plotar Gráfico de Barras
     plt.figure(figsize=(12, 7))
-    bar_labels = df_top_felt['title']  # .str[:10] # Encurtados
+
+    #Criar um eixo X numérico (de 0 a 9)
+    x_positions = np.arange(len(df_top_felt))
+    #Pegar os rótulos que queremos usar
+    bar_labels = df_top_felt['title']
+    #Plotar usando as POSIÇÕES numéricas, não os títulos
+    plt.bar(x_positions, df_top_felt['felt'], color='skyblue')
+
+    bar_labels = df_top_felt['title']
     plt.bar(bar_labels, df_top_felt['felt'], color='skyblue')
 
-    plt.xlabel('Título do Evento (iniciais)')
+    plt.xlabel('Título do Evento')
     plt.ylabel('Número de Relatos (Felt)')
     plt.title('Top 10 Eventos por Percepção Humana (felt)')
-    plt.xticks(rotation=45, ha='right')
+    plt.xticks(x_positions, bar_labels, rotation=45, ha='right')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
 
     plt.show()
 
-    # --- Parte B: Gráficos - Análise de Correlação ---
+    #Parte B: Análise de Correlação
 
     df_corr = df.dropna(subset=['felt', 'magnitude', 'distanceKM'])
     df_corr = df_corr[df_corr['felt'] > 0]
 
     if len(df_corr) > 2:
-        # --- Gráfico de Dispersão: Felt vs. Magnitude ---
+
+        #Gráfico de Dispersão: Felt vs. Magnitude
         x_mag = df_corr['magnitude']
         y_felt = df_corr['felt']
-        m_mag, b_mag = np.polyfit(x_mag, y_felt, 1)  # Calcular linha de tendência
+        m_mag, b_mag = np.polyfit(x_mag, y_felt, 1) # Calcular linha de tendência
 
         plt.figure(figsize=(10, 6))
         plt.scatter(x_mag, y_felt, alpha=0.5, label='Eventos')
@@ -80,9 +89,9 @@ def ask2(df):
 
         plt.show()
 
-        # --- Gráfico de Dispersão: Felt vs. Distância ---
+        #Gráfico de Dispersão: Felt vs. Distância
         x_dist = df_corr['distanceKM']
-        m_dist, b_dist = np.polyfit(x_dist, y_felt, 1)  # Calcular linha de tendência
+        m_dist, b_dist = np.polyfit(x_dist, y_felt, 1) # Calcular linha de tendência
 
         plt.figure(figsize=(10, 6))
         plt.scatter(x_dist, y_felt, alpha=0.5, label='Eventos', color='green')
@@ -99,56 +108,64 @@ def ask2(df):
 
 # Pergunta 3: Como os níveis de alerta (alert - 'green', 'yellow', 'red') se distribuem geograficamente? Onde se concentram os alertas de maior impacto (vermelho), indicando áreas prioritárias para infraestrutura de resposta rápida?
 def ask3(df):
-    # --- Parte A: Mapa com distribuição geográfica dos alertas ---
+    # Parte A: Mapa da Distribuição Geográfica dos Alertas
+
     alert_levels = ['green', 'yellow', 'red']
     df_alerts = df[df['alert'].isin(alert_levels)].copy()
 
-    # 1. Mapeamento de cores
+
+    #Mapear cores
     color_map = {'green': '#2ca02c', 'yellow': '#ffdd00', 'red': '#d62728'}
 
-    # 2. Criar figura com projeção geográfica
+    #Criar o gráfico de dispersão (Longitude vs Latitude)
     plt.figure(figsize=(15, 8))
 
-    # Adicionar mapa base
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.stock_img()
     ax.coastlines()
 
-    # 3. Plotar pontos por nível de alerta
+    #Plotar cada grupo para criar a legenda
     for alert_level in alert_levels:
         df_subset = df_alerts[df_alerts['alert'] == alert_level]
-        ax.scatter(
+        plt.scatter(
             df_subset['longitude'],
             df_subset['latitude'],
             color=color_map[alert_level],
             label=f'Alerta {alert_level.capitalize()}',
             alpha=0.7,
-            s=df_subset['magnitude'] * 12,  # tamanho proporcional à magnitude
-            transform=ccrs.PlateCarree()
+            s=df_subset['magnitude'] * 10 # Tamanho do ponto pela magnitude
         )
 
-    # 4. Títulos e legenda
-    plt.title('Distribuição Geográfica dos Níveis de Alerta de Terremotos', fontsize=14)
-    ax.legend(title='Nível de Alerta', loc='lower left')
+    plt.title('Distribuição Geográfica dos Níveis de Alerta')
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    lgnd = plt.legend(title='Nível de Alerta')
+
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.axhline(0, color='black', linewidth=0.5) # Linha do Equador
+    plt.axvline(0, color='black', linewidth=0.5) # Meridiano de Greenwich
+    plt.tight_layout()
 
     plt.show()
 
-    # --- Parte B: Gráfico de barras dos alertas vermelhos ---
+    #Parte B: Concentração de Alertas Vermelhos
+
+    #Contar alertas vermelhos por país
     df_red_counts = df[df['alert'] == 'red']['country'].value_counts()
 
-    if not df_red_counts.empty:
-        plt.figure(figsize=(12, 7))
-        df_red_counts.plot(kind='bar', color='crimson')
+    #Criar o gráfico de barras
+    plt.figure(figsize=(12, 7))
+    df_red_counts.plot(kind='bar', color='crimson')
 
-        plt.title('Concentração de Alertas Vermelhos por País')
-        plt.xlabel('País')
-        plt.ylabel('Contagem de Alertas Vermelhos')
-        plt.xticks(rotation=45, ha='right')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.show()
-    else:
-        print("Nenhum alerta vermelho encontrado nos dados.")
+    plt.title('Concentração de Alertas de Maior Impacto (Vermelho) por País')
+    plt.xlabel('País')
+    plt.ylabel('Contagem de Alertas Vermelhos')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+
+    plt.show()
 
 # Pergunta 4: Qual é a correlação estatística entre a magnitude, a profundidade e a intensidade de dano reportada? Terremotos mais rasos tendem a gerar MMI mais alto para a mesma magnitude?
 def ask4(df):
@@ -179,14 +196,11 @@ def ask4(df):
 
 # Pergunta 5: Terremotos mais rasos estão associados a maiores índices de dano?​
 def ask5(df):
-    df = df[['depth', 'mmi']].dropna()
-
-    corr = df['depth'].corr(df['mmi'])
-    print(f"Correlação entre profundidade e MMI: {corr:.2f}")
+    dfQuakes = df[['depth', 'mmi']].dropna()
 
     plt.figure(figsize=(8, 5))
     sns.regplot(
-        data=df,
+        data=dfQuakes,
         x='depth',
         y='mmi',
         scatter_kws={'alpha': 0.5},
